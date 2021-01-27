@@ -22,12 +22,6 @@ func (dr AkDecoder) Decode(data []byte) (Msg, error) {
 	case 1:
 		msg.Body = new(AkSnap)
 		msg.Type = "Depth"
-	case 2:
-		msg.Body = new(AkBestOrder)
-		msg.Type = "other"
-	case 3:
-		msg.Body = new(AkIndex)
-		msg.Type = "other"
 	case 4:
 		msg.Body = new(AkTrade)
 		msg.Type = "Tick"
@@ -38,10 +32,14 @@ func (dr AkDecoder) Decode(data []byte) (Msg, error) {
 		msg.Body = nil
 	}
 	if msg.Body == nil {
-		return msg, errors.New("Error msg type")
+		return msg, errors.New("Error msg type") // 主动不解析
 	}
-	binary.Read(r, dr.Endian, msg.Body)
-	return msg, nil
+	err := binary.Read(r, dr.Endian, msg.Body)
+	if err != nil {
+		fmt.Println("failed to decode :", data)
+		return msg, err // 解析失败
+	}
+	return msg, nil // 成功
 }
 
 type AkMsg struct {

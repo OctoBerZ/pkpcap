@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"os"
 	"path"
-	"sync"
 	"time"
 
 	"github.com/google/gopacket"
@@ -38,7 +37,7 @@ func checkMainArgs() (string, string) {
 		flag.Usage()
 		os.Exit(1)
 	}
-	if (outDir != "rs") && (outDir != "ak") {
+	if (outDir != "rs") && (outDir != "ak") && (outDir != "hs") {
 		flag.Usage()
 		os.Exit(1)
 	}
@@ -80,71 +79,70 @@ func main() {
 		decoder = RsDecoder{binary.BigEndian}
 	case "ak":
 		decoder = AkDecoder{binary.BigEndian}
+	case "hs":
+		decoder = HsDecoder{binary.LittleEndian}
 	}
 
+	packetSource := gopacket.NewPacketSource(handler, handler.LinkType())
+	for packet := range packetSource.Packets() {
+		if app := packet.ApplicationLayer(); app != nil {
+			ts := packet.Metadata().CaptureInfo.Timestamp.UnixNano()
+			msg, err := decoder.Decode(app.Payload())
+			if err != nil {
+				continue
+			}
+			switch msg.SaveType() {
+			case "Depth":
+				depthFile.WriteString(fmt.Sprintf("%s\n", msg.ToString(ts)))
+			case "Tick":
+				tickFile.WriteString(fmt.Sprintf("%s\n", msg.ToString(ts)))
+			}
+		}
+	}
 	/*
-		packetSource := gopacket.NewPacketSource(handler, handler.LinkType())
-		for packet := range packetSource.Packets() {
-			if app := packet.ApplicationLayer(); app != nil {
-				ts := packet.Metadata().CaptureInfo.Timestamp.UnixNano()
-				msg, err := decoder.Decode(app.Payload())
-				if err != nil {
-					fmt.Println("failed to decode: ", app.Payload())
-					continue
-				}
-				switch msg.SaveType() {
-				case "Depth":
-					depthFile.WriteString(fmt.Sprintf("%s\n", msg.ToString(ts)))
-				case "Tick":
-					tickFile.WriteString(fmt.Sprintf("%s\n", msg.ToString(ts)))
+		type im struct {
+			ts  int64
+			msg Msg
+		}
+		chdepth := make(chan *im, 100)
+		chtick := make(chan *im, 100)
+		var wg sync.WaitGroup
+		wg.Add(3)
+		go func() {
+			packetSource := gopacket.NewPacketSource(handler, handler.LinkType())
+			for packet := range packetSource.Packets() {
+				if app := packet.ApplicationLayer(); app != nil {
+					ts := packet.Metadata().CaptureInfo.Timestamp.UnixNano()
+					msg, err := decoder.Decode(app.Payload())
+					if err != nil {
+						continue
+					}
+					switch msg.SaveType() {
+					case "Depth":
+						chdepth <- &im{ts, msg}
+					case "Tick":
+						chtick <- &im{ts, msg}
+					}
 				}
 			}
-		}
+			close(chtick)
+			close(chdepth)
+			wg.Done()
+		}()
+		go func() {
+			for im := range chdepth {
+				depthFile.WriteString(fmt.Sprintf("%s\n", im.msg.ToString(im.ts)))
+			}
+			wg.Done()
+		}()
+		go func() {
+			for im := range chtick {
+				tickFile.WriteString(fmt.Sprintf("%s\n", im.msg.ToString(im.ts)))
+			}
+			wg.Done()
+		}()
+		wg.Wait()
 	*/
-	type im struct {
-		ts  int64
-		msg Msg
-	}
-	chdepth := make(chan *im, 100)
-	chtick := make(chan *im, 100)
-	var wg sync.WaitGroup
-	wg.Add(3)
-	go func() {
-		packetSource := gopacket.NewPacketSource(handler, handler.LinkType())
-		for packet := range packetSource.Packets() {
-			if app := packet.ApplicationLayer(); app != nil {
-				ts := packet.Metadata().CaptureInfo.Timestamp.UnixNano()
-				msg, err := decoder.Decode(app.Payload())
-				if err != nil {
-					fmt.Println("failed to decode: ", app.Payload())
-					continue
-				}
-				switch msg.SaveType() {
-				case "Depth":
-					chdepth <- &im{ts, msg}
-				case "Tick":
-					chtick <- &im{ts, msg}
-				}
-			}
-		}
-		close(chtick)
-		close(chdepth)
-		wg.Done()
-	}()
-	go func() {
-		for im := range chdepth {
-			depthFile.WriteString(fmt.Sprintf("%s\n", im.msg.ToString(im.ts)))
-		}
-		wg.Done()
-	}()
-	go func() {
-		for im := range chtick {
-			tickFile.WriteString(fmt.Sprintf("%s\n", im.msg.ToString(im.ts)))
-		}
-		wg.Done()
-	}()
-	wg.Wait()
-
 	fmt.Println("decode success")
 
 }

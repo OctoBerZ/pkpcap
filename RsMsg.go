@@ -18,9 +18,6 @@ func (dr RsDecoder) Decode(data []byte) (Msg, error) {
 	r := bytes.NewReader(data)
 	binary.Read(r, dr.Endian, &msg.Head)
 	switch msg.Head.MsgType {
-	case 1:
-		msg.Body = new(RsIndex)
-		msg.Type = ""
 	case 2:
 		msg.Body = new(RsEntrust)
 		msg.Type = "Tick"
@@ -34,11 +31,14 @@ func (dr RsDecoder) Decode(data []byte) (Msg, error) {
 		msg.Body = nil
 	}
 	if msg.Body == nil {
-		return msg, errors.New("Error msg type")
+		return msg, errors.New("Error msg type") // 主动不解析
 	}
-	binary.Read(r, dr.Endian, msg.Body)
-	return msg, nil
-
+	err := binary.Read(r, dr.Endian, msg.Body)
+	if err != nil {
+		fmt.Println("failed to decode :", data)
+		return msg, err // 解析失败
+	}
+	return msg, nil // 成功
 }
 
 //RsMsg Abc
@@ -183,7 +183,7 @@ func (m *RsSnap) ToString(recvTime int64) string {
 		excgid = 1
 	}
 	return fmt.Sprintf(
-		"%s, %s, %d, %d, %f, %d, %f, %d, %f, %d, %f, %d, %d, %d, %f, %f, %f, %f, %d",
+		"%s, %d, %d, %d, %f, %d, %f, %d, %f, %d, %f, %d, %d, %d, %f, %f, %f, %f, %d",
 		m.SecurityID, excgid, m.OrigTime, recvTime,
 		float32(m.BidPrice[0])*rate, m.BidVolume[0], float32(m.AskPrice[0])*rate, m.AskVolume[0],
 		float32(m.BidPrice[9])*rate, m.BidVolume[9], float32(m.AskPrice[9])*rate, m.AskVolume[9],
