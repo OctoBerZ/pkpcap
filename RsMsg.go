@@ -175,9 +175,16 @@ type RsSnap struct {
 
 func (m *RsSnap) ToString(recvTime int64) string {
 	var rate float32 = 1e-6
+	var excgid int
+	switch m.ExchangeID[1] {
+	case 0x5a: // b'Z'
+		excgid = 2
+	case 0x48: // b'H'
+		excgid = 1
+	}
 	return fmt.Sprintf(
 		"%s, %s, %d, %d, %f, %d, %f, %d, %f, %d, %f, %d, %d, %d, %f, %f, %f, %f, %d",
-		m.SecurityID, m.ExchangeID, m.OrigTime, recvTime,
+		m.SecurityID, excgid, m.OrigTime, recvTime,
 		float32(m.BidPrice[0])*rate, m.BidVolume[0], float32(m.AskPrice[0])*rate, m.AskVolume[0],
 		float32(m.BidPrice[9])*rate, m.BidVolume[9], float32(m.AskPrice[9])*rate, m.AskVolume[9],
 		m.TotalBidVol, m.TotalAskVol,

@@ -60,13 +60,9 @@ func (msg *AkMsg) ToString(recvTime int64) string {
 
 type AkMsgHeader struct {
 	MessageType uint8
-	Pad_cgo_0   [4]byte
-	ExchangeID  uint8
-	SecurityID  [8]byte
 }
 
 type AkBestOrder struct {
-	MessageType uint8
 	ExchangeID  uint8
 	SecurityID  [8]byte
 	Side        uint8
@@ -82,7 +78,6 @@ func (m *AkBestOrder) ToString(recvTime int64) string {
 }
 
 type AkIndex struct {
-	MessageType      uint8
 	Pad_cgo_0        [4]byte
 	ExchangeID       uint8
 	SecurityID       [8]byte
@@ -114,7 +109,6 @@ func (m *AkIndex) ToString(recvTime int64) string {
 }
 
 type AkEntrust struct {
-	MessageType  uint8
 	Pad_cgo_0    [4]byte
 	ExchangeID   uint8
 	SecurityID   [8]byte
@@ -136,7 +130,6 @@ func (m *AkEntrust) ToString(recvTime int64) string {
 }
 
 type AkTrade struct {
-	MessageType     uint8
 	Pad_cgo_0       [4]byte
 	ExchangeID      uint8
 	SecurityID      [8]byte
@@ -158,7 +151,7 @@ type AkTrade struct {
 func (m *AkTrade) ToString(recvTime int64) string {
 	var rate float32 = 1e-6
 	return fmt.Sprintf(
-		"%s, %d, %d, %d, %d, %f, %d, %c",
+		"%s, %d, %d, %d, %d, %f, %d, %d",
 		m.SecurityID, m.ChannelNo, m.ApplSeqNum, m.TransactTime, recvTime, float32(m.LastPrice)*rate, m.LastQty, m.ExecType)
 }
 
@@ -168,7 +161,6 @@ type BidAskPriceQty struct {
 }
 
 type AkSnap struct {
-	MessageType      uint8
 	Pad_cgo_0        [4]byte
 	ExchangeID       uint8
 	SecurityID       [8]byte
