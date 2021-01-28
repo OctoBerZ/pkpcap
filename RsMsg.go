@@ -14,50 +14,36 @@ type RsDecoder struct {
 
 // Decode decode function
 func (dr RsDecoder) Decode(data []byte) (Msg, error) {
-	msg := new(RsMsg)
+	header := new(RsHeader)
 	r := bytes.NewReader(data)
-	binary.Read(r, dr.Endian, &msg.Head)
-	switch msg.Head.MsgType {
+	binary.Read(r, dr.Endian, header)
+	var body Msg
+	switch header.MsgType {
 	case 2:
-		msg.Body = new(RsEntrust)
-		msg.Type = "Tick"
+		body = new(RsEntrust)
+		//msg.Type = "Tick"
 	case 3:
-		msg.Body = new(RsTrade)
-		msg.Type = "Tick"
+		body = new(RsTrade)
+		//msg.Type = "Tick"
 	case 4:
-		msg.Body = new(RsSnap)
-		msg.Type = "Depth"
+		body = new(RsSnap)
+		//msg.Type = "Depth"
 	default:
-		msg.Body = nil
+		body = nil
 	}
-	if msg.Body == nil {
-		return msg, errors.New("Error msg type") // 主动不解析
+	if body == nil {
+		return body, errors.New("Error msg type") // 主动不解析
 	}
-	err := binary.Read(r, dr.Endian, msg.Body)
+	err := binary.Read(r, dr.Endian, body)
 	if err != nil {
 		fmt.Println("failed to decode :", data)
-		return msg, err // 解析失败
+		return body, err // 解析失败
 	}
-	return msg, nil // 成功
+	return body, nil // 成功
 }
 
-//RsMsg Abc
-type RsMsg struct {
-	Head RsMsgHeader
-	Type string
-	Body interface{ ToString(int64) string }
-}
-
-func (msg *RsMsg) SaveType() string {
-	return msg.Type
-}
-
-func (msg *RsMsg) ToString(recvTime int64) string {
-	return msg.Body.ToString(recvTime)
-}
-
-//RsMsgHeader Rishon UDP data header
-type RsMsgHeader struct {
+//RsHeader Rishon UDP data header
+type RsHeader struct {
 	MagicNum [2]byte //魔数
 	MsgID    uint32  //消息ID
 	MsgType  uint16  //消息类型
@@ -85,7 +71,7 @@ type RsIndex struct {
 	FpgaTime   int64   //硬件时间戳
 }
 
-func (m *RsIndex) ToString(recvTime int64) string {
+func (m RsIndex) ToString(recvTime int64) string {
 	return fmt.Sprintf(
 		"%s, %d, %d, %s, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d",
 		m.ExchangeID, m.OrigTime, m.ChannelNO, m.SecurityID,
@@ -107,7 +93,7 @@ type RsEntrust struct {
 	FpgaTime     int64   //硬件时间戳
 }
 
-func (m *RsEntrust) ToString(recvTime int64) string {
+func (m RsEntrust) ToString(recvTime int64) string {
 	return fmt.Sprintf(
 		"%s, %d, %d, %d, %d, %d, %d, %c",
 		m.SecurityID, m.ChannelNO, m.AppSeqNum,
@@ -130,7 +116,7 @@ type RsTrade struct {
 	FpgaTime       int64   //硬件时间戳
 }
 
-func (m *RsTrade) ToString(recvTime int64) string {
+func (m RsTrade) ToString(recvTime int64) string {
 	var rate float32 = 1e-6
 	return fmt.Sprintf(
 		"%s, %d, %d, %d, %d, %f, %d, %c",
@@ -173,7 +159,7 @@ type RsSnap struct {
 	FpgaTime          int64 //硬件时间戳
 }
 
-func (m *RsSnap) ToString(recvTime int64) string {
+func (m RsSnap) ToString(recvTime int64) string {
 	var rate float32 = 1e-6
 	var excgid int
 	switch m.ExchangeID[1] {

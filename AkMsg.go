@@ -15,51 +15,34 @@ type AkDecoder struct {
 }
 
 func (dr AkDecoder) Decode(data []byte) (Msg, error) {
-	msg := new(AkMsg)
+	header := new(AkHeader)
 	r := bytes.NewReader(data)
-	binary.Read(r, dr.Endian, &msg.Head)
-	switch msg.Head.MessageType {
+	binary.Read(r, dr.Endian, header)
+	var body Msg
+	switch header.MessageType {
 	case 1:
-		msg.Body = new(AkSnap)
-		msg.Type = "Depth"
+		body = new(AkSnap)
 	case 4:
-		msg.Body = new(AkTrade)
-		msg.Type = "Tick"
+		body = new(AkTrade)
 	case 5:
-		msg.Body = new(AkEntrust)
-		msg.Type = "Tick"
+		body = new(AkEntrust)
 	default:
-		msg.Body = nil
+		body = nil
 	}
-	if msg.Body == nil {
-		return msg, errors.New("Error msg type") // 主动不解析
+	if body == nil {
+		return body, errors.New("Error msg type") // 主动不解析
 	}
-	err := binary.Read(r, dr.Endian, msg.Body)
+	err := binary.Read(r, dr.Endian, body)
 	if err != nil {
 		fmt.Println("failed to decode :", data)
-		return msg, err // 解析失败
+		return body, err // 解析失败
 	}
-	return msg, nil // 成功
+	return body, nil // 成功
 }
 
-type AkMsg struct {
-	Head AkMsgHeader
-	Type string
-	Body interface{ ToString(int64) string }
-}
-
-func (msg *AkMsg) SaveType() string {
-	return msg.Type
-}
-
-func (msg *AkMsg) ToString(recvTime int64) string {
-	return msg.Body.ToString(recvTime)
-}
-
-type AkMsgHeader struct {
+type AkHeader struct {
 	MessageType uint8
 }
-
 type AkBestOrder struct {
 	ExchangeID  uint8
 	SecurityID  [8]byte
@@ -71,7 +54,7 @@ type AkBestOrder struct {
 	SendingTime [6]int8
 }
 
-func (m *AkBestOrder) ToString(recvTime int64) string {
+func (m AkBestOrder) ToString(recvTime int64) string {
 	return fmt.Sprintf("NaN, %d", recvTime)
 }
 
@@ -99,7 +82,7 @@ type AkIndex struct {
 	SendingTime      [6]int8
 }
 
-func (m *AkIndex) ToString(recvTime int64) string {
+func (m AkIndex) ToString(recvTime int64) string {
 	return fmt.Sprintf(
 		"%d, %d, %d, %s, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d",
 		m.ExchangeID, m.TimeStamp, m.ChannelNo, m.SecurityID,
@@ -120,7 +103,7 @@ type AkEntrust struct {
 	Mdstreamid   [3]byte
 }
 
-func (m *AkEntrust) ToString(recvTime int64) string {
+func (m AkEntrust) ToString(recvTime int64) string {
 	return fmt.Sprintf(
 		"%s, %d, %d, %d, %d, %d, %d, %c",
 		m.SecurityID, m.ChannelNo, m.ApplSeqNum,
@@ -146,7 +129,7 @@ type AkTrade struct {
 	SendingTime     [6]int8
 }
 
-func (m *AkTrade) ToString(recvTime int64) string {
+func (m AkTrade) ToString(recvTime int64) string {
 	var rate float32 = 1e-6
 	return fmt.Sprintf(
 		"%s, %d, %d, %d, %d, %f, %d, %d",
@@ -191,7 +174,7 @@ type AkSnap struct {
 	SendingTime      [6]int8
 }
 
-func (m *AkSnap) ToString(recvTime int64) string {
+func (m AkSnap) ToString(recvTime int64) string {
 	var rate float32 = 1e-6
 	return fmt.Sprintf(
 		"%s, %d, %d, %d, %f, %d, %f, %d, %f, %d, %f, %d, %d, %d, %f, %f, %f, %f, %d",

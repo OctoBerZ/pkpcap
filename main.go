@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"sync"
 	"time"
 
 	"github.com/google/gopacket"
@@ -18,7 +19,6 @@ import (
 
 // Msg Abc
 type Msg interface {
-	SaveType() string
 	ToString(int64) string
 }
 
@@ -64,9 +64,9 @@ func main() {
 		}
 	}
 
-	year, month, day := time.Now().Date()
-	depthFileName := fmt.Sprintf("%d%02d%d_Depth.csv", year, month, day)
-	tickFileName := fmt.Sprintf("%d%02d%d_Tick.csv", year, month, day)
+	now := time.Now()
+	depthFileName := fmt.Sprintf("%d%02d%d%d%d%d_Depth.csv", now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), now.Second())
+	tickFileName := fmt.Sprintf("%d%02d%d%d%d%d_Tick.csv", now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), now.Second())
 
 	depthFile, err := os.OpenFile(path.Join(outDir, depthFileName), os.O_RDWR|os.O_CREATE, 0755)
 	panicWhenErr(err)
@@ -83,66 +83,74 @@ func main() {
 		decoder = HsDecoder{binary.LittleEndian}
 	}
 
-	packetSource := gopacket.NewPacketSource(handler, handler.LinkType())
-	for packet := range packetSource.Packets() {
-		if app := packet.ApplicationLayer(); app != nil {
-			ts := packet.Metadata().CaptureInfo.Timestamp.UnixNano()
-			msg, err := decoder.Decode(app.Payload())
-			if err != nil {
-				continue
-			}
-			switch msg.SaveType() {
-			case "Depth":
-				depthFile.WriteString(fmt.Sprintf("%s\n", msg.ToString(ts)))
-			case "Tick":
-				tickFile.WriteString(fmt.Sprintf("%s\n", msg.ToString(ts)))
-			}
-		}
-	}
 	/*
-		type im struct {
-			ts  int64
-			msg Msg
-		}
-		chdepth := make(chan *im, 100)
-		chtick := make(chan *im, 100)
-		var wg sync.WaitGroup
-		wg.Add(3)
-		go func() {
-			packetSource := gopacket.NewPacketSource(handler, handler.LinkType())
-			for packet := range packetSource.Packets() {
-				if app := packet.ApplicationLayer(); app != nil {
-					ts := packet.Metadata().CaptureInfo.Timestamp.UnixNano()
-					msg, err := decoder.Decode(app.Payload())
-					if err != nil {
-						continue
-					}
-					switch msg.SaveType() {
-					case "Depth":
-						chdepth <- &im{ts, msg}
-					case "Tick":
-						chtick <- &im{ts, msg}
-					}
+		packetSource := gopacket.NewPacketSource(handler, handler.LinkType())
+		for packet := range packetSource.Packets() {
+			if app := packet.ApplicationLayer(); app != nil {
+				ts := packet.Metadata().CaptureInfo.Timestamp.UnixNano()
+				msg, err := decoder.Decode(app.Payload())
+				if err != nil {
+					continue
+				}
+				switch v := msg.(type) {
+				case *RsSnap, *HsStockSnap, *AkSnap:
+					depthFile.WriteString(fmt.Sprintf("%s\n", msg.ToString(ts)))
+				case *RsTrade, *RsEntrust, *HsOrder, *HsTrade, *AkTrade, *AkEntrust:
+					tickFile.WriteString(fmt.Sprintf("%s\n", msg.ToString(ts)))
+				default:
+					fmt.Println(v)
 				}
 			}
-			close(chtick)
-			close(chdepth)
-			wg.Done()
-		}()
-		go func() {
-			for im := range chdepth {
-				depthFile.WriteString(fmt.Sprintf("%s\n", im.msg.ToString(im.ts)))
-			}
-			wg.Done()
-		}()
-		go func() {
-			for im := range chtick {
-				tickFile.WriteString(fmt.Sprintf("%s\n", im.msg.ToString(im.ts)))
-			}
-			wg.Done()
-		}()
-		wg.Wait()
+		}
 	*/
+
+	type im struct {
+		ts  int64
+		msg Msg
+	}
+	chdepth := make(chan *im, 100)
+	chtick := make(chan *im, 100)
+	var wg sync.WaitGroup
+	wg.Add(3)
+	go func() {
+		packetSource := gopacket.NewPacketSource(handler, handler.LinkType())
+		for packet := range packetSource.Packets() {
+			if app := packet.ApplicationLayer(); app != nil {
+				ts := packet.Metadata().CaptureInfo.Timestamp.UnixNano()
+				msg, err := decoder.Decode(app.Payload())
+				if err != nil {
+					continue
+				}
+				switch v := msg.(type) {
+				case *RsSnap, *HsStockSnap, *AkSnap:
+					chdepth <- &im{ts, msg}
+					//depthFile.WriteString(fmt.Sprintf("%s\n", msg.ToString(ts)))
+				case *RsTrade, *RsEntrust, *HsOrder, *HsTrade, *AkTrade, *AkEntrust:
+					chtick <- &im{ts, msg}
+					//tickFile.WriteString(fmt.Sprintf("%s\n", msg.ToString(ts)))
+				default:
+					fmt.Println(v)
+				}
+			}
+		}
+		close(chtick)
+		close(chdepth)
+		wg.Done()
+	}()
+	go func() {
+		for im := range chdepth {
+			depthFile.WriteString(fmt.Sprintf("%s\n", im.msg.ToString(im.ts)))
+		}
+		wg.Done()
+	}()
+	go func() {
+		for im := range chtick {
+			tickFile.WriteString(fmt.Sprintf("%s\n", im.msg.ToString(im.ts)))
+		}
+		wg.Done()
+	}()
+	wg.Wait()
+
 	fmt.Println("decode success")
 
 }

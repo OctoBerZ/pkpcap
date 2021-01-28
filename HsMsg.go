@@ -14,46 +14,29 @@ type HsDecoder struct {
 
 // Decode decode function
 func (dr HsDecoder) Decode(data []byte) (Msg, error) {
-	msg := new(HsMsg)
+	header := new(HsHeader)
 	r := bytes.NewReader(data)
-	binary.Read(r, binary.BigEndian, &msg.Head)
-	switch msg.Head.Body_length {
+	binary.Read(r, binary.BigEndian, header)
+	var body Msg
+	switch header.Body_length {
 	case 0x38:
-		msg.Body = new(HsOrder)
-		msg.Type = "Tick"
+		body = new(HsOrder)
 	case 0x48:
-		msg.Body = new(HsTrade)
-		msg.Type = "Tick"
+		body = new(HsTrade)
 	case 0x1e8:
-		msg.Body = new(HsStockSnap)
-		msg.Type = "Depth"
+		body = new(HsStockSnap)
 	default:
-		msg.Body = nil
+		body = nil
 	}
-	if msg.Body == nil {
-		return msg, errors.New("Error msg type") // 主动不解析
+	if body == nil {
+		return body, errors.New("Error msg type") // 主动不解析
 	}
-	err := binary.Read(r, dr.Endian, msg.Body)
+	err := binary.Read(r, dr.Endian, body)
 	if err != nil {
 		fmt.Println("failed to decode :", data)
-		return msg, err // 解析失败
+		return body, err // 解析失败
 	}
-	return msg, nil // 成功
-}
-
-//HsMsg Abc
-type HsMsg struct {
-	Head HsHeader
-	Type string
-	Body interface{ ToString(int64) string }
-}
-
-func (msg *HsMsg) SaveType() string {
-	return msg.Type
-}
-
-func (msg *HsMsg) ToString(recvTime int64) string {
-	return msg.Body.ToString(recvTime)
+	return body, nil // 成功
 }
 
 type HsHeader struct {
@@ -79,10 +62,10 @@ type HsOrder struct {
 	Checksum      int32
 }
 
-func (m *HsOrder) ToString(recvTime int64) string {
+func (m HsOrder) ToString(recvTime int64) string {
 	return fmt.Sprintf(
 		"%s, %d, %d, %d, %d, %d, %d, %c",
-		m.Security_id, m.Channel_no, m.Appl_seq_num,
+		m.Security_id[:6], m.Channel_no, m.Appl_seq_num,
 		m.Transact_time, recvTime, m.Price, m.Order_qty, m.Order_type)
 }
 
@@ -100,11 +83,11 @@ type HsTrade struct {
 	Checksum           int32
 }
 
-func (m *HsTrade) ToString(recvTime int64) string {
+func (m HsTrade) ToString(recvTime int64) string {
 	var rate float32 = 1e-6
 	return fmt.Sprintf(
 		"%s, %d, %d, %d, %d, %f, %d, %c",
-		m.Security_id, m.Channel_no, m.Appl_seq_num, m.Transact_time, recvTime, float32(m.Last_price)*rate, m.Last_qty, m.Exec_type)
+		m.Security_id[:6], m.Channel_no, m.Appl_seq_num, m.Transact_time, recvTime, float32(m.Last_price)*rate, m.Last_qty, m.Exec_type)
 }
 
 type PriQty struct {
@@ -138,12 +121,12 @@ type HsStockSnap struct {
 	Checksum           int32
 }
 
-func (m *HsStockSnap) ToString(recvTime int64) string {
+func (m HsStockSnap) ToString(recvTime int64) string {
 	var rate float32 = 1e-6
 	excgid := 2
 	return fmt.Sprintf(
 		"%s, %d, %d, %d, %f, %d, %f, %d, %f, %d, %f, %d, %d, %d, %f, %f, %f, %f, %d",
-		m.Security_id, excgid, m.Orig_time, recvTime,
+		m.Security_id[:6], excgid, m.Orig_time, recvTime,
 		float32(m.BidPriQty[0].Price)*rate, m.BidPriQty[0].Qty, float32(m.AskPriQty[0].Price)*rate, m.AskPriQty[0].Qty,
 		float32(m.BidPriQty[9].Price)*rate, m.BidPriQty[9].Qty, float32(m.AskPriQty[9].Price)*rate, m.AskPriQty[9].Qty,
 		m.Total_bid_quantity, m.Total_ask_quantity,
