@@ -130,10 +130,9 @@ type AkTrade struct {
 }
 
 func (m AkTrade) ToString(recvTime int64) string {
-	var rate float32 = 1e-6
 	return fmt.Sprintf(
-		"%s, %d, %d, %d, %d, %f, %d, %d",
-		m.SecurityID[:6], m.ChannelNo, m.ApplSeqNum, m.TransactTime, recvTime, float32(m.LastPrice)*rate, m.LastQty, m.ExecType)
+		"%s, %d, %d, %d, %d, %d, %d, %d",
+		m.SecurityID[:6], m.ChannelNo, m.ApplSeqNum, m.TransactTime, recvTime, m.LastPrice, m.LastQty, m.ExecType)
 }
 
 type BidAskPriceQty struct {
@@ -175,12 +174,11 @@ type AkSnap struct {
 }
 
 func (m AkSnap) ToString(recvTime int64) string {
-	var rate float32 = 1e-6
 	return fmt.Sprintf(
-		"%s, %d, %d, %d, %f, %d, %f, %d, %f, %d, %f, %d, %d, %d, %f, %f, %f, %f, %d",
+		"%s, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d",
 		m.SecurityID[:6], m.ExchangeID, m.TimeStamp, recvTime,
-		float32(m.BidInfo[0].Price)*rate, m.BidInfo[0].Qty, float32(m.AskInfo[0].Price)*rate, m.AskInfo[0].Qty,
-		float32(m.BidInfo[9].Price)*rate, m.BidInfo[9].Qty, float32(m.AskInfo[9].Price)*rate, m.AskInfo[9].Qty,
+		m.BidInfo[0].Price, m.BidInfo[0].Qty, m.AskInfo[0].Price, m.AskInfo[0].Qty,
+		m.BidInfo[9].Price, m.BidInfo[9].Qty, m.AskInfo[9].Price, m.AskInfo[9].Qty,
 		m.BidTotalQty, m.AskTotalQty,
-		float32(m.OpenPrice)*rate, float32(m.HighPrice)*rate, float32(m.LowPrice)*rate, float32(m.LastPrice)*rate, m.TotalVolumeTrade)
+		m.OpenPrice, m.HighPrice, m.LowPrice, m.LastPrice, m.TotalVolumeTrade)
 }

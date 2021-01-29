@@ -84,10 +84,9 @@ type HsTrade struct {
 }
 
 func (m HsTrade) ToString(recvTime int64) string {
-	var rate float32 = 1e-6
 	return fmt.Sprintf(
-		"%s, %d, %d, %d, %d, %f, %d, %c",
-		m.Security_id[:6], m.Channel_no, m.Appl_seq_num, m.Transact_time, recvTime, float32(m.Last_price)*rate, m.Last_qty, m.Exec_type)
+		"%s, %d, %d, %d, %d, %d, %d, %c",
+		m.Security_id[:6], m.Channel_no, m.Appl_seq_num, m.Transact_time, recvTime, m.Last_price, m.Last_qty, m.Exec_type)
 }
 
 type PriQty struct {
@@ -125,12 +124,12 @@ func (m HsStockSnap) ToString(recvTime int64) string {
 	var rate float32 = 1e-6
 	excgid := 2
 	return fmt.Sprintf(
-		"%s, %d, %d, %d, %f, %d, %f, %d, %f, %d, %f, %d, %d, %d, %f, %f, %f, %f, %d",
+		"%s, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d",
 		m.Security_id[:6], excgid, m.Orig_time, recvTime,
-		float32(m.BidPriQty[0].Price)*rate, m.BidPriQty[0].Qty, float32(m.AskPriQty[0].Price)*rate, m.AskPriQty[0].Qty,
-		float32(m.BidPriQty[9].Price)*rate, m.BidPriQty[9].Qty, float32(m.AskPriQty[9].Price)*rate, m.AskPriQty[9].Qty,
+		m.BidPriQty[0].Price, m.BidPriQty[0].Qty, m.AskPriQty[0].Price, m.AskPriQty[0].Qty,
+		m.BidPriQty[9].Price, m.BidPriQty[9].Qty, m.AskPriQty[9].Price, m.AskPriQty[9].Qty,
 		m.Total_bid_quantity, m.Total_ask_quantity,
-		float32(m.Open_price)*rate, float32(m.High_price)*rate, float32(m.Low_price)*rate, float32(m.Last_price)*rate, m.Total_volume_trade)
+		m.Open_price, m.High_price, m.Low_price, m.Last_price, m.Total_volume_trade)
 }
 
 type HsIndexSnap struct {

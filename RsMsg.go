@@ -117,10 +117,9 @@ type RsTrade struct {
 }
 
 func (m RsTrade) ToString(recvTime int64) string {
-	var rate float32 = 1e-6
 	return fmt.Sprintf(
-		"%s, %d, %d, %d, %d, %f, %d, %c",
-		m.SecurityID[:6], m.ChannelNO, m.AppSeqNum, m.TransactTime, recvTime, float32(m.LastPx)*rate, m.LastQty, m.ExecType)
+		"%s, %d, %d, %d, %d, %d, %d, %c",
+		m.SecurityID[:6], m.ChannelNO, m.AppSeqNum, m.TransactTime, recvTime, m.LastPx, m.LastQty, m.ExecType)
 }
 
 //RsSnap Rishon snapshot data struct
@@ -160,7 +159,6 @@ type RsSnap struct {
 }
 
 func (m RsSnap) ToString(recvTime int64) string {
-	var rate float32 = 1e-6
 	var excgid int
 	switch m.ExchangeID[1] {
 	case 0x5a: // b'Z'
@@ -169,10 +167,10 @@ func (m RsSnap) ToString(recvTime int64) string {
 		excgid = 1
 	}
 	return fmt.Sprintf(
-		"%s, %d, %d, %d, %f, %d, %f, %d, %f, %d, %f, %d, %d, %d, %f, %f, %f, %f, %d",
+		"%s, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d",
 		m.SecurityID[:6], excgid, m.OrigTime, recvTime,
-		float32(m.BidPrice[0])*rate, m.BidVolume[0], float32(m.AskPrice[0])*rate, m.AskVolume[0],
-		float32(m.BidPrice[9])*rate, m.BidVolume[9], float32(m.AskPrice[9])*rate, m.AskVolume[9],
+		m.BidPrice[0], m.BidVolume[0], m.AskPrice[0], m.AskVolume[0],
+		m.BidPrice[9], m.BidVolume[9], m.AskPrice[9], m.AskVolume[9],
 		m.TotalBidVol, m.TotalAskVol,
-		float32(m.OpenPx)*rate, float32(m.HighPx)*rate, float32(m.LowPx)*rate, float32(m.LastPx)*rate, m.TotalVolume)
+		m.OpenPx, m.HighPx, m.LowPx, m.LastPx, m.TotalVolume)
 }
