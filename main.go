@@ -65,8 +65,8 @@ func main() {
 	}
 
 	now := time.Now()
-	depthFileName := fmt.Sprintf("%d%02d%d%d%d%d_Depth.csv", now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), now.Second())
-	tickFileName := fmt.Sprintf("%d%02d%d%d%d%d_Tick.csv", now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), now.Second())
+	depthFileName := fmt.Sprintf("%d%02d%02d%02d%02d%02d_Depth.csv", now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), now.Second())
+	tickFileName := fmt.Sprintf("%d%02d%02d%02d%02d%02d_Tick.csv", now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), now.Second())
 
 	depthFile, err := os.OpenFile(path.Join(outDir, depthFileName), os.O_RDWR|os.O_CREATE, 0755)
 	panicWhenErr(err)
