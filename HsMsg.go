@@ -121,7 +121,6 @@ type HsStockSnap struct {
 }
 
 func (m HsStockSnap) ToString(recvTime int64) string {
-	var rate float32 = 1e-6
 	excgid := 2
 	return fmt.Sprintf(
 		"%s, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d",
