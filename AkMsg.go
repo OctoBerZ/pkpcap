@@ -23,7 +23,7 @@ func (dr AkDecoder) Decode(data []byte) (Msg, error) {
 	case 1:
 		body = new(AkSnap)
 	case 4:
-		body = new(AkTrade)
+		body = new(AkTradeSse)
 	case 5:
 		body = new(AkEntrust)
 	default:
@@ -181,4 +181,27 @@ func (m AkSnap) ToString(recvTime int64) string {
 		m.BidInfo[9].Price, m.BidInfo[9].Qty, m.AskInfo[9].Price, m.AskInfo[9].Qty,
 		m.BidTotalQty, m.AskTotalQty,
 		m.OpenPrice, m.HighPrice, m.LowPrice, m.LastPrice, m.TotalVolumeTrade)
+}
+
+//AkTradeSse 逐笔成交
+type AkTradeSse struct {
+	Sequence        uint32
+	TradeBSFlag     uint8
+	MsgSeqID        uint32
+	TradeIndex      uint32
+	SecurityID      [6]byte
+	ChannelNo       uint16
+	TransactTime    uint32
+	LastPrice       uint32
+	LastQty         uint64
+	TradeMoney      uint64
+	BidapplSeqnum   uint32
+	OfferapplSeqnum uint32
+}
+
+//ToString 消息格式化输出
+func (m AkTradeSse) ToString(recvTime int64) string {
+	return fmt.Sprintf(
+		"%s, %d, %d, %d, %d, %d, %d, %d",
+		m.SecurityID[:6], m.ChannelNo, m.TradeIndex, m.TransactTime, recvTime, m.LastPrice, m.LastQty, m.TradeBSFlag)
 }

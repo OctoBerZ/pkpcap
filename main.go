@@ -78,7 +78,7 @@ func main() {
 	case "rs":
 		decoder = RsDecoder{binary.BigEndian}
 	case "ak":
-		decoder = AkDecoder{binary.BigEndian}
+		decoder = AkDecoder{binary.LittleEndian}
 	case "hs":
 		decoder = HsDecoder{binary.LittleEndian}
 	}
@@ -125,11 +125,11 @@ func main() {
 				case *RsSnap, *HsStockSnap, *AkSnap:
 					chdepth <- &im{ts, msg}
 					//depthFile.WriteString(fmt.Sprintf("%s\n", msg.ToString(ts)))
-				case *RsTrade, *RsEntrust, *HsOrder, *HsTrade, *AkTrade, *AkEntrust:
+				case *RsTrade, *RsEntrust, *HsOrder, *HsTrade, *AkTrade, *AkEntrust, *AkTradeSse:
 					chtick <- &im{ts, msg}
 					//tickFile.WriteString(fmt.Sprintf("%s\n", msg.ToString(ts)))
 				default:
-					fmt.Println(v)
+					fmt.Println("unknow type :", v)
 				}
 			}
 		}
