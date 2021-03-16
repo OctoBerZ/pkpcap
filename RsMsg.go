@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"encoding/binary"
-	"errors"
 	"fmt"
 )
 
@@ -19,6 +18,8 @@ func (dr RsDecoder) Decode(data []byte) (Msg, error) {
 	binary.Read(r, dr.Endian, header)
 	var body Msg
 	switch header.MsgType {
+	case 1:
+		body = new(RsIndex)
 	case 2:
 		body = new(RsEntrust)
 		//msg.Type = "Tick"
@@ -32,7 +33,7 @@ func (dr RsDecoder) Decode(data []byte) (Msg, error) {
 		body = nil
 	}
 	if body == nil {
-		return body, errors.New("Error msg type") // 主动不解析
+		return body, fmt.Errorf("Error msg type : %x", header.MsgType) // 主动不解析
 	}
 	err := binary.Read(r, dr.Endian, body)
 	if err != nil {
@@ -71,6 +72,7 @@ type RsIndex struct {
 	FpgaTime   int64   //硬件时间戳
 }
 
+//ToString RsIndex
 func (m RsIndex) ToString(recvTime int64) string {
 	return fmt.Sprintf(
 		"%s, %d, %d, %s, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d",
@@ -93,6 +95,7 @@ type RsEntrust struct {
 	FpgaTime     int64   //硬件时间戳
 }
 
+//ToString RsEntrust
 func (m RsEntrust) ToString(recvTime int64) string {
 	return fmt.Sprintf(
 		"%s, %d, %d, %d, %d, %d, %d, %c",
@@ -116,6 +119,7 @@ type RsTrade struct {
 	FpgaTime       int64   //硬件时间戳
 }
 
+//ToString RsTrade
 func (m RsTrade) ToString(recvTime int64) string {
 	return fmt.Sprintf(
 		"%s, %d, %d, %d, %d, %d, %d, %c",
@@ -158,6 +162,7 @@ type RsSnap struct {
 	FpgaTime          int64 //硬件时间戳
 }
 
+//ToString RsSnap
 func (m RsSnap) ToString(recvTime int64) string {
 	var excgid int
 	switch m.ExchangeID[1] {

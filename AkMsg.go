@@ -6,7 +6,6 @@ package main
 import (
 	"bytes"
 	"encoding/binary"
-	"errors"
 	"fmt"
 )
 
@@ -22,6 +21,8 @@ func (dr AkDecoder) Decode(data []byte) (Msg, error) {
 	switch header.MessageType {
 	case 1:
 		body = new(AkSnap)
+	case 3:
+		body = new(AkIndex)
 	case 4:
 		body = new(AkTradeSse)
 	case 5:
@@ -30,7 +31,7 @@ func (dr AkDecoder) Decode(data []byte) (Msg, error) {
 		body = nil
 	}
 	if body == nil {
-		return body, errors.New("Error msg type") // 主动不解析
+		return body, fmt.Errorf("Error msg type : %x", header.MessageType) // 主动不解析
 	}
 	err := binary.Read(r, dr.Endian, body)
 	if err != nil {
